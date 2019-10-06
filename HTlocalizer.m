@@ -1,6 +1,6 @@
 function activities = HTlocalizer(detections)
 %HT_LOCALIZER Finds location and time of an activity based on acoustic
-%detections in N points (N>=4).
+%detections in N points (N>=3).
 
 %   detections (N by 4 matrix):
 %       N: Number of observations
