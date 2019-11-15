@@ -32,7 +32,7 @@ function varargout = SHfindCalls(varargin)
         else
             h=[];
         end
-        [S,t]=HT_Spectrogram(x,n,F,fs,t0,h(1));
+        [S,t]=HTspectrogram(x,n,F,fs,t0,h(1));
         [r,c]=size(Template);
         % Template Matching
         Upper = find(F==1000);

@@ -29,26 +29,34 @@ switch mode
         end
 end
 
+function Write(handles)
+    handles.Path.Spectrograms = fullfile(handles.Path.Recordings, handles.RecordingSelected,"Spectrogram");
+    mkdir(handles.Path.Spectrograms);
+    Mics=handles.Two_Pop.UserData{2,2};
+    activeMics=find([Mics{:,2}]);
+    for k=activeMics
+        S=handles.Data.S(:,:,k);
+        F=handles.Data.F;
+        t=handles.Data.t(k,:);
+        micName = split(string(Mics{k,3}),".");
+        micName = micName(1);
+        save(fullfile(handles.Path.Spectrograms,micName+".mat"),'S','F','t');
+    end
+
 function handles=Prepare(handles)
-temp=Query(...
-    ['select node_id, name, stream_id ',...
-     'from audio a inner join audio_node an on a.stream_id =an.audio_id ',...
-     'where start = ''', char(string(handles.Data.Date)),''''],'cellarray');
-handles.Two_Pop.UserData{2,2}=cell({});
-for i = 1:size(temp,1)
-    handles.Two_Pop.UserData{2,2}{i,1}=temp{i,1};
-    handles.Two_Pop.UserData{2,2}{i,2}=false;
-    handles.Two_Pop.UserData{2,2}{i,3}=temp{i,2};
-    handles.Two_Pop.UserData{2,2}{i,4}=temp{i,3};
-end
+handles.Two_Pop.UserData{2,2} = Query(handles);
+
 Mics=handles.Two_Pop.UserData{2,2};
 l=0;
 for k=1:size(Mics,1)
-    filename=fullfile(handles.Path.Recordings,Mics{k,3});
+    filename= fullfile(handles.Path.Recordings,convertCharsToStrings(handles.RecordingSelected),"Mics",Mics{k,3});
     info=audioinfo(filename);
     l=max(l,info.TotalSamples);
     fs=info.SampleRate;
 end
+namespl = split(convertCharsToStrings(Mics{1,3}),["__","_","$","."]);
+date = namespl(3)+" "+namespl(4);
+handles.Data.Date=datetime(date,'InputFormat','yyyyMMdd HHmmss');
 ts=timeseries(zeros(l,size(Mics,1)));
 ts.TimeInfo.Units='seconds';
 handles.Data.fs=fs;
@@ -65,7 +73,7 @@ function handles=Read(handles)
 Mics=handles.Two_Pop.UserData{2,2};
 activeMics=find([Mics{:,2}]);
 for k=activeMics
-    filename=fullfile(handles.Path.Recordings,Mics{k,3});
+    filename= fullfile(handles.Path.Recordings,convertCharsToStrings(handles.RecordingSelected),"Mics",Mics{k,3});
     [raw,handles.Data.fs]=audioread(filename);
     handles.Data.TS.Data(1:size(raw,1),k)=zscore(raw(:,1));
 end
@@ -90,33 +98,25 @@ for k=activeMics
         'YData',2*handles.Data.Max*[-1,-1,1,1]);
 end
 
-function Write(handles)
-if handles.Mode.UserData==1
-    Mics=handles.Two_Pop.UserData{2,2};
-    activeMics=find([Mics{:,2}]);
-    for k=activeMics
-        S=handles.Data.S(:,:,k);
-        F=handles.Data.F;
-        t=handles.Data.t(k,:);
-        mkdir([handles.Path.Spectrograms],...
-            sprintf('%010d',Mics{k,3}));
-        save([handles.Path.Spectrograms,...
-            sprintf('%010d',Mics{k,3}),'/',...
-            sprintf('%010d',Mics{k,3}),...
-            num2str(handles.Data.TS.Time(handles.Data.Edges(handles.Data.j)),...
-            '_%07.2f'),'.mat'],'S','F','t');
-    end
-end
+function temp = Query(handles)
+temp = {};
 
-function varargout=Query(SQL,format)
-conn = database('QuailKit','QuailKit','Q123456789');
-if isempty(format)
-    try
-        execute(conn,SQL);
-    catch
-        warning('Some error happened while wrtiting to database!');
+recordDir = fullfile(handles.Path.Recordings, handles.RecordingSelected);
+mics = dir(fullfile(recordDir,"Mics"));
+
+numMics = size(mics);
+numMics = numMics(1);
+j = 1
+for i = 1:numMics
+    micName = split(convertCharsToStrings(mics(i).name), "__");
+    micName = micName(1);
+    ext = split(micName, '.');
+    ext = ext(end)
+    if micName ~= '.' && micName ~= '..' && ext ~= 'txt'
+        ind = find(ismember(handles.MicData(:,3),micName));
+        temp{j,1} = handles.MicData(i,3)
+        temp{j,2} = 1
+        temp{j,3} = convertCharsToStrings(mics(i).name)
+        j = j + 1
     end
-else
-    varargout{1} = fetch(conn,SQL,'DataReturnFormat',format);
 end
-close(conn);

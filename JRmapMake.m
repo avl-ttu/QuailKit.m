@@ -1,4 +1,4 @@
-classdef JR_MapMake
+classdef JRmapMake
     %JR_MAPMAKE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -18,7 +18,7 @@ classdef JR_MapMake
     
     methods
           
-        function obj=JR_MapMake(h,key, data, distance)
+        function obj=JRmapMake(h,key, data, distance)
             R = 6.3781*(10.^6);
             %Find max long min long
             meanLong =  mean(data(:,2));
@@ -30,8 +30,8 @@ classdef JR_MapMake
             
             h.XLim=obj.lonlim;
             h.YLim=obj.latlim;
-            plot_google_map('Axis',h,'MapScale', 1, 'maptype', 'satellite', 'showLabels', 0, 'APIKey', key, 'AutoAxis', 1);
             hold(h,'on');
+            plot_google_map('Axis',h,'MapScale', 1, 'maptype', 'satellite', 'showLabels', 0, 'APIKey', key, 'AutoAxis', 1);
             plot(h,data(:,2)', data(:,1)' , '.r', 'MarkerSize', 20);
             hold(h,'off');
         end
